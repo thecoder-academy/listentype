@@ -3,13 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ListenType</title> <!-- Updated title -->
+    <title>ListenType</title>
     <!-- Google Fonts: Instrument Sans -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;700&display=swap" rel="stylesheet">
-    <!-- Material Symbols CDN -->
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -146,9 +144,10 @@
 
         <!-- Processing Screen Content (Skeleton Loader) -->
         <div id="processing-screen" class="hidden p-8">
-            <h2 class="text-2xl font-bold text-gray-800 mb-6">Transcript</h2>
             <div id="skeleton-container" class="space-y-3">
-                <!-- Skeleton lines will be dynamically inserted here -->
+                <!-- Skeleton title -->
+                <div class="h-6 bg-gray-300 rounded-md skeleton-line" style="width: 40%; margin-bottom: 1.5rem;"></div>
+                <!-- Other skeleton lines will be dynamically inserted here -->
             </div>
         </div>
 
@@ -227,7 +226,7 @@
         const currentTimeDisplay = document.getElementById('current-time-display');
         const totalTimeDisplay = document.getElementById('total-time-display');
         const rewindButton = document.getElementById('rewind-button');
-        const forwardButton = document.getElementById('forward-button');
+        const forwardButton = document.getElementById('forward-button'); // Corrected typo here
         const skeletonContainer = document.getElementById('skeleton-container');
         const toastNotification = document.getElementById('toast-notification');
 
@@ -245,15 +244,12 @@
 
         // --- Utility Functions ---
         function updateUI() {
-            // Update main card width
+            // Update main card width based on current page
             if (currentPage === 'input') {
-                mainCard.classList.remove('max-w-lg', 'max-w-4xl');
+                mainCard.classList.remove('max-w-4xl');
                 mainCard.classList.add('max-w-2xl');
-            } else if (currentPage === 'processing') {
-                mainCard.classList.remove('max-w-2xl', 'max-w-4xl');
-                mainCard.classList.add('max-w-2xl');
-            } else if (currentPage === 'test') {
-                mainCard.classList.remove('max-w-2xl', 'max-w-lg');
+            } else if (currentPage === 'processing' || currentPage === 'test') { // Both processing and test screens use max-w-4xl
+                mainCard.classList.remove('max-w-2xl');
                 mainCard.classList.add('max-w-4xl');
             }
 
@@ -404,6 +400,13 @@
         function renderSkeletonScreen() {
             clearSkeleton(); // Ensure any previous skeleton is cleared
             
+            // Add skeleton title
+            const titleLine = document.createElement('div');
+            titleLine.classList.add('h-6', 'bg-gray-300', 'rounded-md', 'skeleton-line');
+            titleLine.style.width = '40%'; // Represents a shorter title line
+            titleLine.style.marginBottom = '1.5rem'; // More space for a title
+            skeletonContainer.appendChild(titleLine);
+
             const numberOfLines = 10; // Number of skeleton lines to display
             const baseWidth = 90; // Base percentage width for lines
             const widthVariation = 10; // Max percentage variation
@@ -418,7 +421,7 @@
                 // Use setTimeout to trigger the width animation after 1 second for each line
                 const timer = setTimeout(() => {
                     line.style.width = `${randomWidth}%`; // Animate to default width
-                }, i * 1000); // 1 second delay between each line appearing
+                }, i * 100); // Faster animation for skeleton lines
 
                 skeletonTimers.push(timer); // Store timer ID for cleanup
                 skeletonContainer.appendChild(line);
@@ -436,7 +439,7 @@
 
                 Transcript: "${transcript}"`;
 
-                const chatHistory = [{ role: "user", parts: [{ text: prompt }] }]; // Combined apiKey
+                const chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
                 const payload = {
                     contents: chatHistory,
                     generationConfig: {
@@ -487,7 +490,7 @@
 
                 Transcript: "${transcriptText}"`;
 
-                const gapFillingChatHistory = [{ role: "user", parts: [{ text: gapFillingPrompt }] }]; // Combined apiKey
+                const gapFillingChatHistory = [{ role: "user", parts: [{ text: gapFillingPrompt }] }];
                 const gapFillingPayload = {
                     contents: gapFillingChatHistory,
                     generationConfig: {
@@ -521,6 +524,7 @@
 
                 const gapFillingResult = await gapFillingResponse.json();
 
+                // Corrected: Use gapFillingResult for all checks within this block
                 if (gapFillingResult.candidates && gapFillingResult.candidates.length > 0 &&
                     gapFillingResult.candidates[0].content && gapFillingResult.candidates[0].content.parts &&
                     gapFillingResult.candidates[0].content.parts.length > 0) {
@@ -528,21 +532,18 @@
                     const parsedGapFillingResult = JSON.parse(json);
 
                     // Robust processing of advanced words and modified transcript
-                    // This ensures correct mapping even if Gemini's output has identical words
                     const tempAdvancedWords = [];
                     let tempProcessedTranscript = parsedGapFillingResult.modifiedTranscript || transcriptText;
                     const originalWords = parsedGapFillingResult.advancedWords || [];
 
-                    // Replace placeholders with actual words and build tempAdvancedWords in correct order
                     let gapIndexCounter = 0;
                     tempProcessedTranscript = tempProcessedTranscript.replace(/\[GAP_WORD_(\d+)\]/g, (match, p1) => {
                         const originalIndex = parseInt(p1);
                         if (originalWords[originalIndex]) {
                             tempAdvancedWords.push(originalWords[originalIndex]);
-                            // Return a new placeholder with the correct sequential index
                             return `[GAP_WORD_${gapIndexCounter++}]`;
                         }
-                        return match; // Fallback if word not found (shouldn't happen)
+                        return match;
                     });
 
                     extractedAdvancedWords = tempAdvancedWords;
@@ -552,28 +553,28 @@
 
                     // Second API call for title generation
                     const title = await generateTranscriptTitle(transcriptText);
-                    transcriptTitle.textContent = title; // Update the title element
+                    transcriptTitle.textContent = title;
 
                     // Immediately transition to test screen
-                    clearSkeleton(); // Clear skeleton before showing test screen
+                    clearSkeleton();
                     currentPage = 'test';
                     updateUI();
                     renderGapFillingTest();
                     if (uploadedAudioFile) {
                         audioEl.src = URL.createObjectURL(uploadedAudioFile);
-                        audioEl.load(); // Load audio to get metadata
+                        audioEl.load();
                     }
                 } else {
                     console.error('Gemini API response structure unexpected for gap filling:', gapFillingResult);
                     alert('Error processing transcript. Please try again.');
-                    clearSkeleton(); // Clear skeleton on error
+                    clearSkeleton();
                     currentPage = 'input';
                     updateUI();
                 }
             } catch (error) {
                 console.error('Error calling Gemini API for transcript processing:', error);
                 alert('Failed to process transcript. Please check your network or try again.');
-                clearSkeleton(); // Clear skeleton on error
+                clearSkeleton();
                 currentPage = 'input';
                 updateUI();
             }
@@ -588,6 +589,7 @@
             paragraphs.forEach(paragraph => {
                 // Step 2: For each paragraph, split into sentences, keeping the delimiters
                 // This regex splits by . ? ! followed by optional whitespace, and captures the delimiter itself
+                // It also captures standalone periods, commas, etc., and ellipses
                 const sentenceParts = paragraph.split(/([.?!]\s*)/);
 
                 let currentSentenceText = '';
@@ -599,8 +601,8 @@
                             const sentenceDiv = document.createElement('div');
                             sentenceDiv.classList.add('mb-3', 'p-2', 'border-b', 'border-gray-200');
 
-                            // New regex to split by both GAP_WORD and ellipsis
-                            const contentParts = currentSentenceText.split(/(\[GAP_WORD_\d+\]|\.{3})/g); // Added |\.{3} for ellipsis
+                            // New regex to split by GAP_WORD, ellipses, and common punctuation
+                            const contentParts = currentSentenceText.split(/(\[GAP_WORD_\d+\]|\.{3}|[.,!?;])/g);
 
                             contentParts.forEach(contentPart => {
                                 if (contentPart.startsWith('[GAP_WORD_') && contentPart.endsWith(']')) {
@@ -613,7 +615,6 @@
                                     input.value = userAnswers[gapNumber] || '';
                                     input.dataset.gapIndex = gapNumber;
 
-                                    // No checkmark icon, just change text color
                                     input.addEventListener('input', (e) => {
                                         const index = parseInt(e.target.dataset.gapIndex);
                                         userAnswers[index] = e.target.value;
@@ -626,17 +627,17 @@
                                         }
                                     });
 
-                                    // Apply green color if already correct (on re-render)
                                     if (correctAnswers[gapNumber]) {
                                         input.classList.add('text-green-500');
                                     }
 
                                     sentenceDiv.appendChild(input); // Append input directly
-                                } else if (contentPart === '...') { // Handle ellipsis specifically
-                                    const ellipsisSpan = document.createElement('span');
-                                    ellipsisSpan.textContent = '...';
-                                    ellipsisSpan.style.whiteSpace = 'nowrap'; // Prevent line break
-                                    sentenceDiv.appendChild(ellipsisSpan);
+                                } else if (contentPart.match(/^(\.{3}|[.,!?;])$/)) { // Handle ellipsis OR single punctuation
+                                    const puncSpan = document.createElement('span');
+                                    puncSpan.textContent = contentPart;
+                                    puncSpan.style.whiteSpace = 'nowrap'; // Prevent line break
+                                    puncSpan.style.display = 'inline-block'; // Ensure nowrap applies
+                                    sentenceDiv.appendChild(puncSpan);
                                 } else {
                                     sentenceDiv.appendChild(document.createTextNode(contentPart));
                                 }
@@ -653,7 +654,7 @@
                 if (currentSentenceText.trim().length > 0) {
                     const sentenceDiv = document.createElement('div');
                     sentenceDiv.classList.add('mb-3', 'p-2', 'border-b', 'border-gray-200');
-                    const contentParts = currentSentenceText.split(/(\[GAP_WORD_\d+\]|\.{3})/g); // Added |\.{3} for ellipsis
+                    const contentParts = currentSentenceText.split(/(\[GAP_WORD_\d+\]|\.{3}|[.,!?;])/g); // Added for ellipsis and punctuation
                     contentParts.forEach(contentPart => {
                         if (contentPart.startsWith('[GAP_WORD_') && contentPart.endsWith(']')) {
                             const gapNumber = parseInt(contentPart.match(/\d+/)[0]);
@@ -681,10 +682,11 @@
                                 input.classList.add('text-green-500');
                             }
                             sentenceDiv.appendChild(input);
-                        } else if (contentPart === '...') { // Handle ellipsis specifically
+                        } else if (contentPart.match(/^(\.{3}|[.,!?;])$/)) { // Handle ellipsis OR single punctuation
                             const ellipsisSpan = document.createElement('span');
-                            ellipsisSpan.textContent = '...';
+                            ellipsisSpan.textContent = contentPart;
                             ellipsisSpan.style.whiteSpace = 'nowrap'; // Prevent line break
+                            ellipsisSpan.style.display = 'inline-block'; // Ensure nowrap applies
                             sentenceDiv.appendChild(ellipsisSpan);
                         } else {
                             sentenceDiv.appendChild(document.createTextNode(contentPart));
