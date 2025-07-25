@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ListenType</title>
-    <!-- Google Fonts -->
+    <!-- Google Fonts: Instrument Sans -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;700&display=swap" rel="stylesheet">
@@ -12,25 +12,54 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
-            font-family: 'Instrument Sans', sans-serif;
+            font-family: 'Instrument Sans', sans-serif; /* Updated font */
         }
         /* Custom styles for audio seek bar */
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%; /* Ensure it fills container */
+            height: 4px; /* Thin bar */
+            background: #D1D5DB; /* Light gray for remaining track */
+            border-radius: 2px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-webkit-slider-runnable-track {
+            background: linear-gradient(to right, #1F2937 var(--progress, 0%), #D1D5DB var(--progress, 0%)); /* Dark gray filled, light gray remaining */
+            border-radius: 2px;
+            height: 4px;
+        }
+
+        input[type="range"]::-moz-range-track {
+            background: linear-gradient(to right, #1F2937 var(--progress, 0%), #D1D5DB var(--progress, 0%)); /* Dark gray filled, light gray remaining */
+            border-radius: 2px;
+            height: 4px;
+        }
+
         input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
-            width: 16px;
-            height: 16px;
-            background: #000000; /* Changed from blue-500 to black */
-            border-radius: 50%;
-            cursor: pointer;
+            width: 8px; /* Width of the vertical bar */
+            height: 20px; /* Height of the vertical bar */
+            background: #1F2937; /* Dark gray/black */
+            border-radius: 4px; /* Rounded corners for the bar */
+            cursor: grab;
+            margin-top: -8px; /* Adjust to center vertically on the track */
+            border: 2px solid white; /* White outline */
+            box-sizing: border-box; /* Include padding/border in size */
         }
         input[type="range"]::-moz-range-thumb {
-            width: 16px;
-            height: 16px;
-            background: #000000; /* Changed from blue-500 to black */
-            border-radius: 50%;
-            cursor: pointer;
+            width: 8px; /* Width of the vertical bar */
+            height: 20px; /* Height of the vertical bar */
+            background: #1F2937; /* Dark gray/black */
+            border-radius: 4px; /* Rounded corners for the bar */
+            cursor: grab;
+            border: 2px solid white; /* White outline */
+            box-sizing: border-box; /* Include padding/border in size */
         }
+
         /* Style for gap input fields */
         .gap-input {
             border-bottom: 1px solid #9CA3AF; /* gray-400 */
@@ -40,11 +69,13 @@
             margin-left: 0.25rem;
             margin-right: 0.25rem;
             outline: none;
+            font-family: 'Instrument Sans', sans-serif; /* Ensure consistent font */
         }
         .gap-input:focus {
-            border-color: #000000; /* Changed from blue-500 to black */
+            border-color: #000000; /* Black */
         }
-        /* Spinner animation for processing screen */
+
+        /* Spinner animation for toast */
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
@@ -54,13 +85,23 @@
             border: 4px solid #f3f3f3; /* Light grey base */
             border-top: 4px solid #000000; /* Black for the spinning part */
             border-radius: 50%;
-            width: 40px;
-            height: 40px;
+            width: 20px; /* Smaller for toast */
+            height: 20px; /* Smaller for toast */
             box-sizing: border-box; /* Ensures padding/border don't affect size */
+        }
+
+        /* Skeleton line width animation (retained from previous version) */
+        .skeleton-line {
+            transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        /* Custom shadow for audio player and finish button */
+        .player-shadow {
+            box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.25); /* x, y, no blur, 25% black opacity */
         }
     </style>
 </head>
-<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+<body class="bg-blue-50 flex items-center justify-center min-h-screen p-4">
 
     <div id="main-card" class="bg-white rounded-2xl shadow-xl p-8 w-full relative overflow-hidden max-w-2xl">
 
@@ -72,7 +113,7 @@
             </h1>
 
             <p class="text-lg text-gray-700 mb-6">
-                Improve your English by listening to audio and filling in the gaps.
+                Improve your English listening skills by filling in the blanks.
             </p>
             <p class="text-lg text-gray-700 mb-4">
                 To get started, simply paste your transcript here:
@@ -88,7 +129,6 @@
 
             <div class="flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0 sm:space-x-4">
                 <label for="audio-upload" id="upload-audio-label" class="flex items-center justify-center px-6 py-3 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 w-full sm:w-auto cursor-pointer">
-                    <!-- Reference to icons/upload.svg -->
                     <img src="icons/upload.svg" class="h-5 w-5 mr-2" alt="Upload audio icon" onerror="this.onerror=null;this.src='https://placehold.co/20x20/cccccc/222222?text=Up'">
                     Upload audio
                 </label>
@@ -97,57 +137,70 @@
                 <button id="start-button" disabled
                     class="flex items-center justify-center px-6 py-3 rounded-lg w-full sm:w-auto bg-gray-300 text-gray-500 cursor-not-allowed">
                     Let's start!
-                    <!-- Reference to icons/arrow-right.svg -->
                     <img src="icons/arrow-right.svg" class="h-5 w-5 ml-2" alt="Start icon" onerror="this.onerror=null;this.src='https://placehold.co/20x20/cccccc/222222?text=Go'">
                 </button>
             </div>
         </div>
 
-        <!-- Processing Screen Content -->
-        <div id="processing-screen" class="hidden">
-            <div class="text-center flex flex-col items-center justify-center h-full py-8">
-                <!-- Spinner (CSS animated, not an SVG file) -->
-                <div class="spinner mb-4"></div>
-                <h2 class="text-2xl font-bold text-gray-800 mb-2">Processing your transcript</h2>
-                <p class="text-lg text-gray-700 mb-6">This should take less than a minute.</p>
-                <button id="cancel-button" class="px-6 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300">
-                    Cancel
-                </button>
+        <!-- Processing Screen Content (Skeleton Loader) -->
+        <div id="processing-screen" class="hidden p-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">Transcript</h2>
+            <div id="skeleton-container" class="space-y-3">
+                <!-- Skeleton lines will be dynamically inserted here -->
             </div>
         </div>
 
         <!-- Gap Filling Test Content -->
         <div id="test-screen" class="hidden p-8 pb-20 relative">
-            <h2 class="text-2xl font-bold text-gray-800 mb-6">Transcript</h2>
+            <!-- Restart button now always on top-left -->
+            <button id="restart-button" class="flex items-center justify-center px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 mb-4 self-start">
+                <img src="icons/arrow-left.svg" class="h-5 w-5 mr-2" alt="New Transcript icon" onerror="this.onerror=null;this.src='https://placehold.co/20x20/cccccc/222222?text=New'">
+                New Transcript
+            </button>
+            <!-- AI-generated title -->
+            <h2 id="transcript-title" class="text-2xl font-bold text-gray-800 mb-6"></h2>
+            
             <div id="transcript-display" class="text-lg text-gray-700 leading-relaxed mb-8">
                 <!-- Gaps will be rendered here by JavaScript -->
             </div>
 
-            <!-- Floating Audio Player and Finish Button Container -->
-            <div class="fixed bottom-4 left-1/2 -translate-x-1/2 flex items-end space-x-4 z-10">
-                <!-- Floating Audio Player -->
-                <div id="audio-player-container" class="bg-white rounded-[16px] shadow-md p-4 flex items-center space-x-4 hidden">
+            <!-- Floating Audio Player Container -->
+            <div class="fixed bottom-4 left-1/2 -translate-x-1/2 flex justify-center w-full px-4 sm:px-0">
+                <div id="audio-player-container" class="bg-white rounded-[16px] player-shadow p-4 flex flex-col items-center space-y-2 hidden w-full sm:max-w-lg border border-black">
                     <audio id="audio-element" preload="metadata"></audio>
-                    <button id="play-pause-button" class="text-gray-700 hover:text-black focus:outline-none">
-                        <!-- Reference to icons/play.svg -->
-                        <img id="play-icon" src="icons/play.svg" class="h-8 w-8" alt="Play icon" onerror="this.onerror=null;this.src='https://placehold.co/32x32/cccccc/222222?text=Pl'">
-                        <!-- Reference to icons/pause.svg -->
-                        <img id="pause-icon" src="icons/pause.svg" class="h-8 w-8 hidden" alt="Pause icon" onerror="this.onerror=null;this.src='https://placehold.co/32x32/cccccc/222222?text=Pa'">
-                    </button>
-                    <input type="range" id="seek-bar" min="0" value="0" class="w-48 h-1 bg-gray-300 rounded-lg appearance-none cursor-pointer" />
-                    <div id="time-display" class="text-sm text-gray-600">0:00 / 0:00</div>
-                </div>
+                    
+                    <!-- Slider and Time (always on top) -->
+                    <div class="flex items-center w-full">
+                        <div id="current-time-display" class="text-sm text-gray-600 whitespace-nowrap mr-2">0:00</div>
+                        <input type="range" id="seek-bar" min="0" value="0" class="flex-grow h-1 bg-gray-300 rounded-lg appearance-none cursor-pointer" />
+                        <div id="total-time-display" class="text-sm text-gray-600 whitespace-nowrap ml-2">0:00</div>
+                    </div>
 
-                <!-- Floating Finish Button (now a check icon) -->
-                <div id="finish-button-container" class="hidden">
-                    <button id="finish-button" class="p-3 bg-black text-white rounded-[16px] shadow-md hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-black">
-                        <!-- Reference to icons/check-black.svg -->
-                        <img src="icons/check-black.svg" class="h-8 w-8" alt="Finish icon" onerror="this.onerror=null;this.src='https://placehold.co/32x32/cccccc/222222?text=OK'">
-                    </button>
+                    <!-- Controls (always on bottom) -->
+                    <div class="flex items-center justify-center space-x-4 w-full">
+                        <!-- Rewind 15s Button -->
+                        <button id="rewind-button" class="text-gray-700 hover:text-black focus:outline-none">
+                            <img src="icons/backward15-seconds.svg" class="h-8 w-8" alt="Rewind 15 seconds icon" onerror="this.onerror=null;this.src='https://placehold.co/32x32/cccccc/222222?text=Bk'">
+                        </button>
+                        <button id="play-pause-button" class="text-gray-700 hover:text-black focus:outline-none">
+                            <img id="play-icon" src="icons/play-solid.svg" class="h-8 w-8" alt="Play icon" onerror="this.onerror=null;this.src='https://placehold.co/32x32/cccccc/222222?text=Pl'">
+                            <img id="pause-icon" src="icons/pause-solid.svg" class="h-8 w-8 hidden" alt="Pause icon" onerror="this.onerror=null;this.src='https://placehold.co/32x32/cccccc/222222?text=Pa'">
+                        </button>
+                        <!-- Forward 15s Button -->
+                        <button id="forward-button" class="text-gray-700 hover:text-black focus:outline-none">
+                            <img src="icons/forward15-seconds.svg" class="h-8 w-8" alt="Forward 15 seconds icon" onerror="this.onerror=null;this.src='https://placehold.co/32x32/cccccc/222222?text=Fw'">
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
 
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast-notification" class="fixed bottom-4 left-1/2 -translate-x-1/2 bg-gray-800 text-white px-4 py-2 rounded-full shadow-lg flex items-center space-x-2 hidden">
+        <div class="spinner"></div>
+        <span>Processing your transcript...</span>
     </div>
 
     <script>
@@ -160,17 +213,21 @@
         const uploadAudioLabel = document.getElementById('upload-audio-label');
         const audioUploadInput = document.getElementById('audio-upload');
         const startButton = document.getElementById('start-button');
-        const cancelButton = document.getElementById('cancel-button');
+        const transcriptTitle = document.getElementById('transcript-title'); // For AI-generated title
+        const restartButton = document.getElementById('restart-button'); // New Transcript button
         const transcriptDisplay = document.getElementById('transcript-display');
         const audioPlayerContainer = document.getElementById('audio-player-container');
         const audioEl = document.getElementById('audio-element');
         const playPauseButton = document.getElementById('play-pause-button');
-        const playIcon = document.getElementById('play-icon'); // Now an img element
-        const pauseIcon = document.getElementById('pause-icon'); // Now an img element
+        const playIcon = document.getElementById('play-icon');
+        const pauseIcon = document.getElementById('pause-icon');
         const seekBar = document.getElementById('seek-bar');
-        const timeDisplay = document.getElementById('time-display');
-        const finishButtonContainer = document.getElementById('finish-button-container');
-        const finishButton = document.getElementById('finish-button');
+        const currentTimeDisplay = document.getElementById('current-time-display');
+        const totalTimeDisplay = document.getElementById('total-time-display');
+        const rewindButton = document.getElementById('rewind-button');
+        const forwardButton = document.getElementById('forward-button');
+        const skeletonContainer = document.getElementById('skeleton-container');
+        const toastNotification = document.getElementById('toast-notification');
 
         // Application State
         let transcriptText = '';
@@ -182,6 +239,7 @@
         let userAnswers = [];
         let correctAnswers = [];
         let isPlaying = false;
+        let skeletonTimers = []; // To store timeouts for clearing
 
         // --- Utility Functions ---
         function updateUI() {
@@ -191,7 +249,7 @@
                 mainCard.classList.add('max-w-2xl');
             } else if (currentPage === 'processing') {
                 mainCard.classList.remove('max-w-2xl', 'max-w-4xl');
-                mainCard.classList.add('max-w-lg');
+                mainCard.classList.add('max-w-2xl');
             } else if (currentPage === 'test') {
                 mainCard.classList.remove('max-w-2xl', 'max-w-lg');
                 mainCard.classList.add('max-w-4xl');
@@ -202,21 +260,36 @@
             processingScreen.classList.toggle('hidden', currentPage !== 'processing');
             testScreen.classList.toggle('hidden', currentPage !== 'test');
 
-            // Show/hide floating elements (controlled by the new parent container)
+            // Show/hide floating elements (audio player)
             const floatingControlsContainer = document.querySelector('.fixed.bottom-4.left-1\\/2');
             if (currentPage === 'test') {
                 floatingControlsContainer.classList.remove('hidden');
                 audioPlayerContainer.classList.toggle('hidden', !uploadedAudioFile);
-                finishButtonContainer.classList.remove('hidden');
             } else {
                 floatingControlsContainer.classList.add('hidden');
             }
+
+            // Manage toast visibility
+            toastNotification.classList.toggle('hidden', currentPage !== 'processing');
         }
 
         function formatTime(time) {
             const minutes = Math.floor(time / 60);
             const seconds = Math.floor(time % 60);
             return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+        }
+
+        // Function to clear skeleton lines and timers
+        function clearSkeleton() {
+            skeletonContainer.innerHTML = ''; // Remove all skeleton lines
+            skeletonTimers.forEach(timer => clearTimeout(timer)); // Clear any pending animations
+            skeletonTimers = []; // Reset timers array
+        }
+
+        // Function to update seek bar progress visually
+        function updateSeekBarProgress() {
+            const progress = (audioEl.currentTime / audioEl.duration) * 100;
+            seekBar.style.setProperty('--progress', `${progress}%`);
         }
 
         // --- Event Handlers ---
@@ -238,25 +311,40 @@
             if (file) {
                 uploadedAudioFile = file;
                 uploadedAudioFileName = file.name;
-                uploadAudioLabel.textContent = uploadedAudioFileName;
+                uploadAudioLabel.innerHTML = `<img src="icons/upload.svg" class="h-5 w-5 mr-2" alt="Upload audio icon" onerror="this.onerror=null;this.src='https://placehold.co/20x20/cccccc/222222?text=Up'">${uploadedAudioFileName}`;
                 console.log('Selected audio file:', file.name);
             } else {
                 uploadedAudioFile = null;
                 uploadedAudioFileName = null;
-                uploadAudioLabel.textContent = 'Upload audio';
+                uploadAudioLabel.innerHTML = `<img src="icons/upload.svg" class="h-5 w-5 mr-2" alt="Upload audio icon" onerror="this.onerror=null;this.src='https://placehold.co/20x20/cccccc/222222?text=Up'">Upload audio`;
             }
         });
 
         startButton.addEventListener('click', () => {
             currentPage = 'processing';
             updateUI();
-            processTranscriptWithGemini();
+            renderSkeletonScreen(); // Start rendering skeleton
+            processTranscriptAndTitleWithGemini(); // Start API calls
         });
 
-        cancelButton.addEventListener('click', () => {
-            currentPage = 'input';
-            updateUI();
-            alert('Processing cancelled.');
+        restartButton.addEventListener('click', () => {
+            // Instead of alert, you might want a custom modal or direct reset
+            if (confirm('Are you sure you want to start a new transcript? Your current progress will be lost.')) {
+                currentPage = 'input';
+                transcriptText = '';
+                transcriptTextarea.value = '';
+                uploadedAudioFile = null;
+                uploadedAudioFileName = null;
+                uploadAudioLabel.innerHTML = `<img src="icons/upload.svg" class="h-5 w-5 mr-2" alt="Upload audio icon" onerror="this.onerror=null;this.src='https://placehold.co/20x20/cccccc/222222?text=Up'">Upload audio`;
+                processedTranscript = '';
+                extractedAdvancedWords = [];
+                userAnswers = [];
+                correctAnswers = [];
+                isPlaying = false;
+                if (!audioEl.paused) audioEl.pause();
+                audioEl.currentTime = 0;
+                updateUI();
+            }
         });
 
         playPauseButton.addEventListener('click', () => {
@@ -275,35 +363,31 @@
 
         seekBar.addEventListener('input', (e) => {
             audioEl.currentTime = e.target.value;
+            updateSeekBarProgress(); // Update progress visually on scrub
         });
 
-        finishButton.addEventListener('click', () => {
-            alert('Test Finished! (Functionality to be added)');
-            currentPage = 'input';
-            transcriptText = '';
-            transcriptTextarea.value = '';
-            uploadedAudioFile = null;
-            uploadedAudioFileName = null;
-            uploadAudioLabel.textContent = 'Upload audio';
-            processedTranscript = '';
-            extractedAdvancedWords = [];
-            userAnswers = [];
-            correctAnswers = [];
-            isPlaying = false;
-            if (!audioEl.paused) audioEl.pause();
-            audioEl.currentTime = 0;
-            updateUI();
+        rewindButton.addEventListener('click', () => {
+            audioEl.currentTime = Math.max(0, audioEl.currentTime - 15); // Changed from 10 to 15
+            updateSeekBarProgress();
+        });
+
+        forwardButton.addEventListener('click', () => {
+            audioEl.currentTime = Math.min(audioEl.duration, audioEl.currentTime + 15); // Changed from 10 to 15
+            updateSeekBarProgress();
         });
 
         // --- Audio Element Listeners ---
         audioEl.addEventListener('loadedmetadata', () => {
             seekBar.max = audioEl.duration;
-            timeDisplay.textContent = `${formatTime(audioEl.currentTime)} / ${formatTime(audioEl.duration)}`;
+            currentTimeDisplay.textContent = formatTime(audioEl.currentTime);
+            totalTimeDisplay.textContent = formatTime(audioEl.duration);
+            updateSeekBarProgress(); // Initial progress update
         });
 
         audioEl.addEventListener('timeupdate', () => {
             seekBar.value = audioEl.currentTime;
-            timeDisplay.textContent = `${formatTime(audioEl.currentTime)} / ${formatTime(audioEl.duration)}`;
+            currentTimeDisplay.textContent = formatTime(audioEl.currentTime);
+            updateSeekBarProgress(); // Update progress visually
         });
 
         audioEl.addEventListener('ended', () => {
@@ -314,9 +398,83 @@
 
         // --- Core Logic Functions ---
 
-        async function processTranscriptWithGemini() {
+        function renderSkeletonScreen() {
+            clearSkeleton(); // Ensure any previous skeleton is cleared
+            
+            const numberOfLines = 10; // Number of skeleton lines to display
+            const baseWidth = 90; // Base percentage width for lines
+            const widthVariation = 10; // Max percentage variation
+
+            for (let i = 0; i < numberOfLines; i++) {
+                const line = document.createElement('div');
+                const randomWidth = baseWidth - (Math.random() * widthVariation); // Vary width slightly
+                line.classList.add('h-4', 'bg-gray-300', 'rounded-md', 'skeleton-line');
+                line.style.width = '0%'; // Start with 0 width
+                line.style.marginBottom = '0.75rem'; // Tailwind 'mb-3' equivalent
+
+                // Use setTimeout to trigger the width animation after 1 second for each line
+                const timer = setTimeout(() => {
+                    line.style.width = `${randomWidth}%`; // Animate to default width
+                }, i * 1000); // 1 second delay between each line appearing
+
+                skeletonTimers.push(timer); // Store timer ID for cleanup
+                skeletonContainer.appendChild(line);
+            }
+        }
+
+        async function generateTranscriptTitle(transcript) {
+            if (!transcript || transcript.trim().length === 0) {
+                console.warn("Transcript is empty, cannot generate title. Returning fallback.");
+                return 'Generated Transcript Title'; // Fallback if transcript is empty
+            }
+
             try {
-                const prompt = `Given the following transcript, identify all advanced English words (e.g., words that might be challenging for an intermediate learner). Return a JSON object with two properties: "advancedWords" (an array of these words) and "modifiedTranscript" (the original transcript with each advanced word replaced by a unique placeholder like "[GAP_WORD_X]", where X is a sequential number starting from 0).
+                const prompt = `Generate a concise and descriptive title (max 10 words) for the following transcript. Do not include any introductory phrases like "The title is:" or "Here's a title:". Just provide the title itself.
+
+                Transcript: "${transcript}"`;
+
+                let chatHistory = [];
+                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+                const payload = {
+                    contents: chatHistory,
+                    generationConfig: {
+                        responseMimeType: "text/plain", // Expecting plain text title
+                    }
+                };
+                const apiKey = "AIzaSyB260YVe4DKDCFH_Oj69Xq0JBryM8Du2SM"; // Canvas will provide this
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`API call for title failed with status ${response.status}: ${errorText}`);
+                }
+
+                const result = await response.json();
+
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    return result.candidates[0].content.parts[0].text.trim();
+                } else {
+                    console.error('Gemini API response for title unexpected:', result);
+                    return 'Generated Transcript Title'; // Fallback title
+                }
+            } catch (error) {
+                console.error('Error calling Gemini API for title:', error);
+                return 'Generated Transcript Title'; // Fallback title on error
+            }
+        }
+
+        async function processTranscriptAndTitleWithGemini() {
+            try {
+                // First API call for gap filling
+                const gapFillingPrompt = `Given the following transcript, identify all advanced English words (e.g., words that might be challenging for an intermediate learner). Return a JSON object with two properties: "advancedWords" (an array of these words) and "modifiedTranscript" (the original transcript with each advanced word replaced by a unique placeholder like "[GAP_WORD_X]", where X is a sequential number starting from 0).
 
                 Example:
                 Transcript: "The intricate tapestry of human emotions is a complex phenomenon."
@@ -327,10 +485,10 @@
 
                 Transcript: "${transcriptText}"`;
 
-                let chatHistory = [];
-                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
-                const payload = {
-                    contents: chatHistory,
+                let gapFillingChatHistory = [];
+                gapFillingChatHistory.push({ role: "user", parts: [{ text: gapFillingPrompt }] });
+                const gapFillingPayload = {
+                    contents: gapFillingChatHistory,
                     generationConfig: {
                         responseMimeType: "application/json",
                         responseSchema: {
@@ -346,48 +504,57 @@
                         }
                     }
                 };
-                // IMPORTANT: Replace "YOUR_GEMINI_API_KEY_HERE" with your actual Gemini API key.
-                // You can get one from Google AI Studio: https://aistudio.google.com/
-                const apiKey = "AIzaSyB260YVe4DKDCFH_Oj69Xq0JBryM8Du2SM";
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                const apiKey = "AIzaSyB260YVe4DKDCFH_Oj69Xq0JBryM8Du2SM"; // Canvas will provide this
+                const gapFillingApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
-                const response = await fetch(apiUrl, {
+                const gapFillingResponse = await fetch(gapFillingApiUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify(gapFillingPayload)
                 });
 
-                const result = await response.json();
+                if (!gapFillingResponse.ok) {
+                    const errorText = await gapFillingResponse.text();
+                    throw new Error(`API call for gap filling failed with status ${gapFillingResponse.status}: ${errorText}`);
+                }
 
-                if (result.candidates && result.candidates.length > 0 &&
-                    result.candidates[0].content && result.candidates[0].content.parts &&
-                    result.candidates[0].content.parts.length > 0) {
-                    const json = result.candidates[0].content.parts[0].text;
-                    const parsedResult = JSON.parse(json);
+                const gapFillingResult = await gapFillingResponse.json();
 
-                    extractedAdvancedWords = parsedResult.advancedWords || [];
-                    processedTranscript = parsedResult.modifiedTranscript || transcriptText;
+                if (gapFillingResult.candidates && gapFillingResult.candidates.length > 0 &&
+                    gapFillingResult.candidates[0].content && gapFillingResult.candidates[0].content.parts &&
+                    gapFillingResult.candidates[0].content.parts.length > 0) {
+                    const json = gapFillingResult.candidates[0].content.parts[0].text;
+                    const parsedGapFillingResult = JSON.parse(json);
+
+                    extractedAdvancedWords = parsedGapFillingResult.advancedWords || [];
+                    processedTranscript = parsedGapFillingResult.modifiedTranscript || transcriptText;
                     userAnswers = Array(extractedAdvancedWords.length).fill('');
                     correctAnswers = Array(extractedAdvancedWords.length).fill(false);
 
-                    setTimeout(() => {
-                        currentPage = 'test';
-                        updateUI();
-                        renderGapFillingTest();
-                        if (uploadedAudioFile) {
-                            audioEl.src = URL.createObjectURL(uploadedAudioFile);
-                            audioEl.load(); // Load audio to get metadata
-                        }
-                    }, 500); // Small delay before transitioning to test
+                    // Second API call for title generation
+                    const title = await generateTranscriptTitle(transcriptText);
+                    transcriptTitle.textContent = title; // Update the title element
+
+                    // Immediately transition to test screen
+                    clearSkeleton(); // Clear skeleton before showing test screen
+                    currentPage = 'test';
+                    updateUI();
+                    renderGapFillingTest();
+                    if (uploadedAudioFile) {
+                        audioEl.src = URL.createObjectURL(uploadedAudioFile);
+                        audioEl.load(); // Load audio to get metadata
+                    }
                 } else {
-                    console.error('Gemini API response structure unexpected:', result);
+                    console.error('Gemini API response structure unexpected for gap filling:', gapFillingResult);
                     alert('Error processing transcript. Please try again.');
+                    clearSkeleton(); // Clear skeleton on error
                     currentPage = 'input';
                     updateUI();
                 }
             } catch (error) {
-                console.error('Error calling Gemini API:', error);
+                console.error('Error calling Gemini API for transcript processing:', error);
                 alert('Failed to process transcript. Please check your network or try again.');
+                clearSkeleton(); // Clear skeleton on error
                 currentPage = 'input';
                 updateUI();
             }
@@ -473,7 +640,6 @@
                             input.value = userAnswers[gapNumber] || '';
                             input.dataset.gapIndex = gapNumber;
 
-                            // No checkmark icon, just change text color
                             input.addEventListener('input', (e) => {
                                 const index = parseInt(e.target.dataset.gapIndex);
                                 userAnswers[index] = e.target.value;
@@ -489,7 +655,7 @@
                             if (correctAnswers[gapNumber]) {
                                 input.classList.add('text-green-500');
                             }
-                            sentenceDiv.appendChild(input); // Append input directly
+                            sentenceDiv.appendChild(input);
                         } else {
                             sentenceDiv.appendChild(document.createTextNode(contentPart));
                         }
