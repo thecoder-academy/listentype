@@ -526,8 +526,26 @@
                     const json = gapFillingResult.candidates[0].content.parts[0].text;
                     const parsedGapFillingResult = JSON.parse(json);
 
-                    extractedAdvancedWords = parsedGapFillingResult.advancedWords || [];
-                    processedTranscript = parsedGapFillingResult.modifiedTranscript || transcriptText;
+                    // Robust processing of advanced words and modified transcript
+                    // This ensures correct mapping even if Gemini's output has identical words
+                    const tempAdvancedWords = [];
+                    let tempProcessedTranscript = parsedGapFillingResult.modifiedTranscript || transcriptText;
+                    const originalWords = parsedGapFillingResult.advancedWords || [];
+
+                    // Replace placeholders with actual words and build tempAdvancedWords in correct order
+                    let gapIndexCounter = 0;
+                    tempProcessedTranscript = tempProcessedTranscript.replace(/\[GAP_WORD_(\d+)\]/g, (match, p1) => {
+                        const originalIndex = parseInt(p1);
+                        if (originalWords[originalIndex]) {
+                            tempAdvancedWords.push(originalWords[originalIndex]);
+                            // Return a new placeholder with the correct sequential index
+                            return `[GAP_WORD_${gapIndexCounter++}]`;
+                        }
+                        return match; // Fallback if word not found (shouldn't happen)
+                    });
+
+                    extractedAdvancedWords = tempAdvancedWords;
+                    processedTranscript = tempProcessedTranscript;
                     userAnswers = Array(extractedAdvancedWords.length).fill('');
                     correctAnswers = Array(extractedAdvancedWords.length).fill(false);
 
@@ -580,8 +598,9 @@
                             const sentenceDiv = document.createElement('div');
                             sentenceDiv.classList.add('mb-3', 'p-2', 'border-b', 'border-gray-200');
 
-                            // Now, populate this sentenceDiv with text and gap inputs
-                            const contentParts = currentSentenceText.split(/(\[GAP_WORD_\d+\])/g);
+                            // New regex to split by both GAP_WORD and ellipsis
+                            const contentParts = currentSentenceText.split(/(\[GAP_WORD_\d+\]|\.{3})/g); // Added |\.{3} for ellipsis
+
                             contentParts.forEach(contentPart => {
                                 if (contentPart.startsWith('[GAP_WORD_') && contentPart.endsWith(']')) {
                                     const gapNumber = parseInt(contentPart.match(/\d+/)[0]);
@@ -612,6 +631,11 @@
                                     }
 
                                     sentenceDiv.appendChild(input); // Append input directly
+                                } else if (contentPart === '...') { // Handle ellipsis specifically
+                                    const ellipsisSpan = document.createElement('span');
+                                    ellipsisSpan.textContent = '...';
+                                    ellipsisSpan.style.whiteSpace = 'nowrap'; // Prevent line break
+                                    sentenceDiv.appendChild(ellipsisSpan);
                                 } else {
                                     sentenceDiv.appendChild(document.createTextNode(contentPart));
                                 }
@@ -628,7 +652,7 @@
                 if (currentSentenceText.trim().length > 0) {
                     const sentenceDiv = document.createElement('div');
                     sentenceDiv.classList.add('mb-3', 'p-2', 'border-b', 'border-gray-200');
-                    const contentParts = currentSentenceText.split(/(\[GAP_WORD_\d+\])/g);
+                    const contentParts = currentSentenceText.split(/(\[GAP_WORD_\d+\]|\.{3})/g); // Added |\.{3} for ellipsis
                     contentParts.forEach(contentPart => {
                         if (contentPart.startsWith('[GAP_WORD_') && contentPart.endsWith(']')) {
                             const gapNumber = parseInt(contentPart.match(/\d+/)[0]);
@@ -656,6 +680,11 @@
                                 input.classList.add('text-green-500');
                             }
                             sentenceDiv.appendChild(input);
+                        } else if (contentPart === '...') { // Handle ellipsis specifically
+                            const ellipsisSpan = document.createElement('span');
+                            ellipsisSpan.textContent = '...';
+                            ellipsisSpan.style.whiteSpace = 'nowrap'; // Prevent line break
+                            sentenceDiv.appendChild(ellipsisSpan);
                         } else {
                             sentenceDiv.appendChild(document.createTextNode(contentPart));
                         }
