@@ -3,11 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ListenType</title>
+    <title>ListenType</title> <!-- Updated title -->
     <!-- Google Fonts: Instrument Sans -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Material Symbols CDN -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -95,7 +97,7 @@
             transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        /* Custom shadow for audio player and finish button */
+        /* Custom shadow for audio player and main card */
         .player-shadow {
             box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.25); /* x, y, no blur, 25% black opacity */
         }
@@ -103,7 +105,7 @@
 </head>
 <body class="bg-blue-50 flex items-center justify-center min-h-screen p-4">
 
-    <div id="main-card" class="bg-white rounded-2xl shadow-xl p-8 w-full relative overflow-hidden max-w-2xl">
+    <div id="main-card" class="bg-white rounded-2xl player-shadow p-8 w-full relative overflow-hidden max-w-2xl"> <!-- Changed shadow-xl to player-shadow -->
 
         <!-- Input Screen Content -->
         <div id="input-screen">
@@ -328,13 +330,14 @@
         });
 
         restartButton.addEventListener('click', () => {
-            // Instead of alert, you might want a custom modal or direct reset
             if (confirm('Are you sure you want to start a new transcript? Your current progress will be lost.')) {
                 currentPage = 'input';
                 transcriptText = '';
                 transcriptTextarea.value = '';
                 uploadedAudioFile = null;
                 uploadedAudioFileName = null;
+                // Clear the file input value to allow re-selection of the same file
+                audioUploadInput.value = ''; 
                 uploadAudioLabel.innerHTML = `<img src="icons/upload.svg" class="h-5 w-5 mr-2" alt="Upload audio icon" onerror="this.onerror=null;this.src='https://placehold.co/20x20/cccccc/222222?text=Up'">Upload audio`;
                 processedTranscript = '';
                 extractedAdvancedWords = [];
@@ -367,12 +370,12 @@
         });
 
         rewindButton.addEventListener('click', () => {
-            audioEl.currentTime = Math.max(0, audioEl.currentTime - 15); // Changed from 10 to 15
+            audioEl.currentTime = Math.max(0, audioEl.currentTime - 15);
             updateSeekBarProgress();
         });
 
         forwardButton.addEventListener('click', () => {
-            audioEl.currentTime = Math.min(audioEl.duration, audioEl.currentTime + 15); // Changed from 10 to 15
+            audioEl.currentTime = Math.min(audioEl.duration, audioEl.currentTime + 15);
             updateSeekBarProgress();
         });
 
@@ -433,8 +436,7 @@
 
                 Transcript: "${transcript}"`;
 
-                let chatHistory = [];
-                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+                const chatHistory = [{ role: "user", parts: [{ text: prompt }] }]; // Combined apiKey
                 const payload = {
                     contents: chatHistory,
                     generationConfig: {
@@ -485,8 +487,7 @@
 
                 Transcript: "${transcriptText}"`;
 
-                let gapFillingChatHistory = [];
-                gapFillingChatHistory.push({ role: "user", parts: [{ text: gapFillingPrompt }] });
+                const gapFillingChatHistory = [{ role: "user", parts: [{ text: gapFillingPrompt }] }]; // Combined apiKey
                 const gapFillingPayload = {
                     contents: gapFillingChatHistory,
                     generationConfig: {
